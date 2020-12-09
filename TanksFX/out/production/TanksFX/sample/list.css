@@ -1,0 +1,15 @@
+#label1{
+    -fx-padding: 15px;
+    -fx-background-color: #9999ff;
+    -fx-max-width: 1000px;
+    -fx-border-color: white;
+    -fx-border-width: 5px 0 5px 10px;
+}
+
+#label2{
+    -fx-margin-top: 10px;
+    -fx-background-color: #999444;
+    -fx-border-color: white;
+    -fx-border-width: 5px 10px 5px 0;
+    -fx-padding: 15px;
+}

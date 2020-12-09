@@ -1,0 +1,7 @@
+.style.css {
+    -fx-background-color: red;
+}
+
+.style.css:hover {
+    -fx-background-color: green;
+}
