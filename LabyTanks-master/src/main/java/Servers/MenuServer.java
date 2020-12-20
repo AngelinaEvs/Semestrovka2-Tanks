@@ -1,6 +1,8 @@
 package Servers;
 
 import Enums.MenuMessageType;
+import Fxml.ListOfStatusLobbies;
+import Fxml.Lobby;
 import Maze.MazeGenerator;
 
 import java.io.File;
@@ -15,7 +17,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
 
-public class MenuServer implements Runnable{
+public class MenuServer implements Runnable {
 
     public static MenuServer menuServer;
     private Selector selector;
@@ -26,12 +28,18 @@ public class MenuServer implements Runnable{
 
     private Map<String, List<SelectionKey>> lobbies;
 
+    private static Lobby lobby;
+
+    private static byte[][] maze;
+
+
     public static void init() throws Exception {
         if (menuServer != null) throw new Exception("Сервер уже был создан");
         menuServer = new MenuServer();
     }
 
     private MenuServer() throws Exception {
+
         properties = new Properties();
         properties.load(new FileReader(new File("src/main/resources/Server.properties")));
 
@@ -89,17 +97,13 @@ public class MenuServer implements Runnable{
         int messageType = buffer.get();
         if (messageType == MenuMessageType.CREATE_LOBBY.getCode()) {
             createLobby(key);
-        }
-        else if (messageType == MenuMessageType.DELETE_LOBBY.getCode()) {
+        } else if (messageType == MenuMessageType.DELETE_LOBBY.getCode()) {
             deleteLobby(key, buffer.array(), read);
-        }
-        else if (messageType == MenuMessageType.CONNECT_TO_LOBBY.getCode()) {
+        } else if (messageType == MenuMessageType.CONNECT_TO_LOBBY.getCode()) {
             connectToLobby(key, buffer.array(), read);
-        }
-        else if (messageType == MenuMessageType.DISCONNECT_FROM_LOBBY.getCode()) {
+        } else if (messageType == MenuMessageType.DISCONNECT_FROM_LOBBY.getCode()) {
             disconnectFromLobby(key, buffer.array(), read);
-        }
-        else if (messageType == MenuMessageType.START_GAME.getCode()) {
+        } else if (messageType == MenuMessageType.START_GAME.getCode()) {
             startGame(key, buffer.array(), read);
         }
     }
@@ -141,6 +145,9 @@ public class MenuServer implements Runnable{
 
             send.put(token);
             writeData(send, key);
+            lobby = new Lobby(stringResult.toString());
+            ListOfStatusLobbies.changeLobby(true);
+
         } catch (Exception e) {
             writeData(ByteBuffer.wrap(BigInteger.valueOf(MenuMessageType.CREATE_LOBBY_ERROR.getCode()).toByteArray()), key);
         }
@@ -175,6 +182,8 @@ public class MenuServer implements Runnable{
                 success.put(token.getBytes());
 
                 writeDataBroadcast(success, lobbies.get(token));
+                lobby.setCurrentCount();
+                ListOfStatusLobbies.addPlayer(true, token);
             } else {
                 writeData(ByteBuffer.wrap(BigInteger.valueOf(MenuMessageType.CONNECT_TO_LOBBY_ERROR.getCode()).toByteArray()), key);
             }
@@ -207,7 +216,7 @@ public class MenuServer implements Runnable{
     private void startGame(SelectionKey key, byte[] buffer, int read) throws IOException {
         String token = new String(buffer, 1, read - 1).replaceAll("\t", "").trim();
         MazeGenerator mazeGenerator = new MazeGenerator(10, 8);
-        byte[][] maze = mazeGenerator.generateMaze();
+        maze = mazeGenerator.generateMaze();
 
         if (lobbies.containsKey(token)) {
             int i = 0;
@@ -218,10 +227,17 @@ public class MenuServer implements Runnable{
                 for (byte[] bytes : maze) {
                     for (byte aByte : bytes) {
                         id.put(aByte);
+
                     }
                 }
                 writeData(id, k);
                 i++;
+                for (int j = 0; j < 10; j++) {
+                    for (int l = 0; l < 8; l++) {
+                        System.out.print(maze[j][l] + "  ");
+                    }
+                    System.out.println();
+                }
             }
 
             GameServer.gameServer.getLobbies().put(token, new LinkedList<>());
@@ -229,6 +245,14 @@ public class MenuServer implements Runnable{
         } else {
             writeData(ByteBuffer.wrap(BigInteger.valueOf(MenuMessageType.START_GAME_ERROR.getCode()).toByteArray()), key);
         }
+    }
+
+    public static Lobby getLobby() {
+        return lobby;
+    }
+
+    public static byte[][] getMaze() {
+        return maze;
     }
 }
 

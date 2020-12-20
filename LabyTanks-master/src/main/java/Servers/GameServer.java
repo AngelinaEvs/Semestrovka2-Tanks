@@ -27,6 +27,7 @@ public class GameServer implements Runnable {
     }
 
     private GameServer() throws IOException {
+
         properties = new Properties();
         properties.load(new FileReader(new File("src/main/resources/Server.properties")));
 
